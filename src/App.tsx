@@ -269,7 +269,7 @@ export default function App() {
           href="https://github.com/WaterSeeding/MagicAgg"
           target="_blank"
         >
-          Made in JYuan
+          Made in Three.js!
         </a>
       </div>
       <canvas
