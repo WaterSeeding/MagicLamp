@@ -301,7 +301,7 @@ export default function App() {
       <div className="content">
         <a
           className="title"
-          href="https://github.com/WaterSeeding/MagicAgg"
+          href="https://github.com/WaterSeeding/MagicLamp"
           target="_blank"
         >
           Made in Three.js!
@@ -311,6 +311,9 @@ export default function App() {
         className={`audioIcon ${isAudioPlay && "active"}`}
         onClick={() => setAudioPlay(!isAudioPlay)}
       ></div>
+      <audio ref={audioRef} loop autoPlay={true}>
+        <source src={"./audio/WINDY_HILL.mp3"} />
+      </audio>
       <canvas
         className="webgl"
         style={{ width: "100%", height: "100%" }}
