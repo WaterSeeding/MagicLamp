@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { SelectiveBloom } from "./js/SelectiveBloom";
-import { DatGUI } from "./js/DatGUI";
 import Particles from "./Particles/Particles";
 import Time from "./Time";
 import "./App.css";
@@ -27,6 +26,8 @@ const getCubeMapTexture = (renderer: THREE.WebGLRenderer, path: string) => {
 
 export default function App() {
   let isInitScene = false;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isAudioPlay, setIsAudioPlay] = useState<boolean>(false);
 
   useEffect(() => {
     if (!isInitScene) {
@@ -36,7 +37,6 @@ export default function App() {
   }, [isInitScene]);
 
   const initScene = async () => {
-    const time = new Time();
     const canvas = document.querySelector("canvas.webgl") as HTMLCanvasElement;
     const renderer = new THREE.WebGLRenderer({
       canvas: document.querySelector("canvas.webgl")!,
@@ -54,16 +54,14 @@ export default function App() {
       1,
       200
     );
-    camera.position.set(0, 1, 12);
+    camera.position.set(0, 4, 20);
     camera.lookAt(0, 0, 0);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 0, 0);
-    controls.autoRotate = false;
+    controls.autoRotate = true;
     controls.autoRotateSpeed = 0.5;
-
-    let selectiveBloom = new SelectiveBloom(scene, camera, renderer);
-    new DatGUI(renderer, selectiveBloom);
+    controls.enableZoom = false;
 
     let envMap = (await getCubeMapTexture(
       renderer,
@@ -74,14 +72,16 @@ export default function App() {
     light.position.setScalar(1);
     scene.add(light, new THREE.AmbientLight(0xffffff, 1.0));
 
+    let { world }: any = await addWorld(scene);
     let { models, mixer }: any = await addModel(scene);
-    console.log("models", models);
     let { ring, ringMixer }: any = await addRing(scene);
 
     let particles = new Particles(scene);
 
-    let clock = new THREE.Clock();
+    let selectiveBloom = new SelectiveBloom(scene, camera, renderer);
 
+    let time = new Time();
+    let clock = new THREE.Clock();
     window.addEventListener("resize", onResize);
     renderer.setAnimationLoop(() => {
       let delta = clock.getDelta();
@@ -102,6 +102,7 @@ export default function App() {
       if (ringMixer) ringMixer.update(delta);
 
       if (models) {
+        world.material.color.set(0x000000);
         models.forEach((model: THREE.Mesh) => {
           // @ts-ignore;
           model.material.color.set(0x000000);
@@ -114,6 +115,7 @@ export default function App() {
       renderer.setClearColor(0x000000);
       selectiveBloom.bloomComposer.render();
       if (models) {
+        world.material.color.copy(world.userData.color);
         models.forEach((model: THREE.Mesh) => {
           // @ts-ignore;
           model.material.color.copy(model.userData.color);
@@ -202,6 +204,29 @@ export default function App() {
     });
   };
 
+  const addWorld = (scene: THREE.Scene) => {
+    return new Promise((resolve, reject) => {
+      let geometry = new THREE.SphereGeometry(15, 64, 32);
+      geometry.scale(-1, 1, 1);
+
+      let material = new THREE.MeshBasicMaterial({
+        map: new THREE.TextureLoader().load("./hdr/1.jpg"),
+        depthTest: false,
+      });
+
+      let world = new THREE.Mesh(geometry, material);
+
+      world!.userData = {
+        // @ts-ignore;
+        color: new THREE.Color().copy(world.material.color),
+      };
+      scene.add(world);
+      resolve({
+        world,
+      });
+    });
+  };
+
   const addRing = (scene: THREE.Scene) => {
     return new Promise((resolve, reject) => {
       const textureloader = new THREE.TextureLoader();
@@ -261,6 +286,16 @@ export default function App() {
     });
   };
 
+  const setAudioPlay = (value: boolean) => {
+    let audioPlayer = audioRef.current as HTMLAudioElement;
+    if (value) {
+      audioPlayer.play();
+    } else {
+      audioPlayer.pause();
+    }
+    setIsAudioPlay(value);
+  };
+
   return (
     <div className="App">
       <div className="content">
@@ -272,6 +307,10 @@ export default function App() {
           Made in Three.js!
         </a>
       </div>
+      <div
+        className={`audioIcon ${isAudioPlay && "active"}`}
+        onClick={() => setAudioPlay(!isAudioPlay)}
+      ></div>
       <canvas
         className="webgl"
         style={{ width: "100%", height: "100%" }}

@@ -67,3 +67,18 @@
     color: #fff6a9;
   }
 }
+
+.audioIcon {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 24px;
+  height: 24px;
+  background-size: 100%;
+  background-image: url('./img/audio-mute.png');
+  cursor: pointer;
+}
+
+.audioIcon.active {
+  background-image: url('./img/audio-high.png');
+}
